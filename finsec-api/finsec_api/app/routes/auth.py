@@ -18,6 +18,7 @@ from app.utils.auth import generate_mfa_secret, get_totp_uri
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 user_schema = UserSchema()
 
+#* CLEAR
 @auth_bp.route('/login', methods=['POST'])
 def login():
     """
@@ -232,6 +233,7 @@ def logout():
         current_app.logger.info(f"Logout attempt for user_id: {user_id}, session_id: {session_id}")
         
         # If the logout request includes a specific user and session, use those instead
+        #! VULN HERE: Investigate logout logic
         if data and data.get('userId') and data.get('sessionId'):
             user_id = data['userId']
             session_id = data['sessionId']
