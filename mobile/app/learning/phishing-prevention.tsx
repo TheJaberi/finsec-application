@@ -1,220 +1,252 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, Animated, PanResponder, TouchableOpacity, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLearningProgress } from '@/contexts/LearningProgressContext';
 import { router } from 'expo-router';
-import { AlertTriangle, Mail, MessageSquare, AlertCircle } from 'lucide-react-native';
+import { AlertTriangle, Mail, MessageSquare, Check, X, AlertCircle, ChevronLeft } from 'lucide-react-native';
 
-const PHISHING_SCENARIOS = [
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const SWIPE_THRESHOLD = 0.25 * SCREEN_WIDTH;
+const SWIPE_OUT_DURATION = 250;
+
+const EXAMPLES = [
   {
-    id: 'email-urgent',
-    title: 'Urgent Bank Notice',
-    type: 'Email',
+    id: 1,
+    type: 'email',
+    title: 'Account Security Alert',
     content: {
-      from: 'security@bank-secure-notice.com',
-      subject: 'Urgent: Account Security Breach',
-      body: 'Dear Customer,\n\nWe have detected suspicious activity on your account. Click here immediately to verify your identity and prevent account suspension: www.bank-secure-verification.com',
-      time: '2:15 AM',
+      from: 'security@accounts-verify.com',
+      subject: 'Urgent: Account Access Limited',
+      body: 'Dear valued customer,\n\nWe have detected unusual activity on your account. To prevent unauthorized access, your account has been temporarily limited. Click here to verify your identity: http://secure-verify-accounts.com/restore',
+      time: '3:45 AM',
     },
-    redFlags: [
-      {
-        element: 'Sender Email',
-        description: 'Suspicious domain, not official bank domain',
-        position: { x: 20, y: 40 },
-      },
-      {
-        element: 'Urgency',
-        description: 'Creates pressure to act quickly without thinking',
-        position: { x: 20, y: 80 },
-      },
-      {
-        element: 'Link',
-        description: 'Suspicious URL, not official bank website',
-        position: { x: 20, y: 160 },
-      },
-      {
-        element: 'Time',
-        description: 'Unusual hour for bank communication',
-        position: { x: 20, y: 200 },
-      },
+    isSuspicious: true,
+    indicators: [
+      'Unofficial email domain',
+      'Generic greeting',
+      'Urgent action required',
+      'Suspicious link',
+      'Unusual timing',
     ],
   },
   {
-    id: 'sms-prize',
-    title: 'Prize Winner SMS',
-    type: 'SMS',
+    id: 2,
+    type: 'sms',
+    title: 'Package Delivery',
     content: {
-      from: '+1234567890',
-      body: 'Congratulations! You\'ve won a $1000 gift card. Claim within 24hrs: bit.ly/claim-prize',
+      from: '+1-555-0123',
+      body: 'Your package is held at customs. Pay a small fee (2.99$) to release: http://track-delivery.co/pay',
       time: 'Just now',
     },
-    redFlags: [
-      {
-        element: 'Unknown Sender',
-        description: 'Random phone number',
-        position: { x: 20, y: 40 },
-      },
-      {
-        element: 'Unexpected Prize',
-        description: 'You haven\'t entered any contest',
-        position: { x: 20, y: 80 },
-      },
-      {
-        element: 'Short URL',
-        description: 'Masked destination link',
-        position: { x: 20, y: 120 },
-      },
-      {
-        element: 'Time Pressure',
-        description: '24-hour deadline to create urgency',
-        position: { x: 20, y: 160 },
-      },
+    isSuspicious: true,
+    indicators: [
+      'Unexpected delivery',
+      'Request for payment',
+      'Shortened URL',
+      'Unknown sender',
     ],
   },
   {
-    id: 'payment-request',
-    title: 'Payment Request',
-    type: 'Message',
+    id: 3,
+    type: 'email',
+    title: 'Bank Statement',
     content: {
-      from: 'payment@secure-transfer.net',
-      body: 'You have received a payment request of $750. Accept payment here: secure-transfer.net/accept-payment',
-      time: '5 minutes ago',
+      from: 'statements@mybank.com',
+      subject: 'Your Monthly Statement is Ready',
+      body: 'Your account statement for the period ending April 15, 2025 is now available in your online banking portal. Sign in to your account to view: https://mybank.com/statements',
+      time: '9:00 AM',
     },
-    redFlags: [
-      {
-        element: 'Unsolicited',
-        description: 'Unexpected payment request',
-        position: { x: 20, y: 40 },
-      },
-      {
-        element: 'Domain',
-        description: 'Generic-looking domain name',
-        position: { x: 20, y: 80 },
-      },
-      {
-        element: 'Action Required',
-        description: 'Requires immediate action',
-        position: { x: 20, y: 120 },
-      },
+    isSuspicious: false,
+    indicators: [
+      'Official bank domain',
+      'No urgent action required',
+      'Directs to official website',
+      'Expected monthly communication',
     ],
   },
 ];
 
 export default function PhishingPreventionScreen() {
-  const [currentScenario, setCurrentScenario] = useState(0);
-  const [foundFlags, setFoundFlags] = useState<string[]>([]);
-  const [showAllFlags, setShowAllFlags] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [score, setScore] = useState(0);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackType, setFeedbackType] = useState<'correct' | 'incorrect' | null>(null);
+  const position = useRef(new Animated.ValueXY()).current;
   const { updateModuleProgress, markModuleComplete } = useLearningProgress();
 
   useEffect(() => {
-    updateModuleProgress('phishing-prevention', `scenario-${currentScenario}`);
-  }, [currentScenario]);
+    updateModuleProgress('phishing-prevention', `example-${currentIndex}`);
+  }, [currentIndex]);
 
-  const handleFlagPress = (element: string) => {
-    if (!showAllFlags && !foundFlags.includes(element)) {
-      const newFoundFlags = [...foundFlags, element];
-      setFoundFlags(newFoundFlags);
-      
-      if (newFoundFlags.length === PHISHING_SCENARIOS[currentScenario].redFlags.length) {
-        // All flags found in current scenario
-        setTimeout(() => {
-          if (currentScenario < PHISHING_SCENARIOS.length - 1) {
-            setCurrentScenario(currentScenario + 1);
-            setFoundFlags([]);
-            setShowAllFlags(false);
-          }
-        }, 1500);
+  const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderMove: (_, gesture) => {
+      position.setValue({ x: gesture.dx, y: 0 });
+    },
+    onPanResponderRelease: (_, gesture) => {
+      if (gesture.dx > SWIPE_THRESHOLD) {
+        swipeRight();
+      } else if (gesture.dx < -SWIPE_THRESHOLD) {
+        swipeLeft();
+      } else {
+        resetPosition();
       }
-    }
+    },
+  });
+
+  const swipeRight = () => {
+    Animated.timing(position, {
+      toValue: { x: SCREEN_WIDTH * 1.5, y: 0 },
+      duration: SWIPE_OUT_DURATION,
+      useNativeDriver: true,
+    }).start(() => handleSwipe(false));
   };
 
-  const getScenarioIcon = (type: string) => {
-    switch (type) {
-      case 'Email':
-        return Mail;
-      case 'SMS':
-        return MessageSquare;
-      default:
-        return AlertCircle;
-    }
+  const swipeLeft = () => {
+    Animated.timing(position, {
+      toValue: { x: -SCREEN_WIDTH * 1.5, y: 0 },
+      duration: SWIPE_OUT_DURATION,
+      useNativeDriver: true,
+    }).start(() => handleSwipe(true));
   };
 
-  const scenario = PHISHING_SCENARIOS[currentScenario];
-  const ScenarioIcon = getScenarioIcon(scenario.type);
+  const resetPosition = () => {
+    Animated.spring(position, {
+      toValue: { x: 0, y: 0 },
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleSwipe = (markedAsSuspicious: boolean) => {
+    const example = EXAMPLES[currentIndex];
+    const isCorrect = markedAsSuspicious === example.isSuspicious;
+
+    setFeedbackType(isCorrect ? 'correct' : 'incorrect');
+    setShowFeedback(true);
+    if (isCorrect) setScore(score + 1);
+
+    setTimeout(() => {
+      setShowFeedback(false);
+      position.setValue({ x: 0, y: 0 });
+      if (currentIndex < EXAMPLES.length - 1) {
+        setCurrentIndex(currentIndex + 1);
+      }
+    }, 2000);
+  };
+
+  const getRotation = () => {
+    return position.x.interpolate({
+      inputRange: [-SCREEN_WIDTH * 1.5, 0, SCREEN_WIDTH * 1.5],
+      outputRange: ['-30deg', '0deg', '30deg'],
+    });
+  };
+
+  const getCardStyle = () => {
+    const rotate = getRotation();
+    return {
+      transform: [
+        { translateX: position.x },
+        { rotate },
+      ],
+    };
+  };
+
+  const renderExample = () => {
+    if (currentIndex >= EXAMPLES.length) return null;
+    const example = EXAMPLES[currentIndex];
+
+    return (
+      <Animated.View
+        style={[styles.card, getCardStyle()]}
+        {...panResponder.panHandlers}
+      >
+        <View style={styles.cardHeader}>
+          {example.type === 'email' ? (
+            <Mail size={24} color="#1A1A1A" />
+          ) : (
+            <MessageSquare size={24} color="#1A1A1A" />
+          )}
+          <Text style={styles.cardTitle}>{example.title}</Text>
+        </View>
+
+        <View style={styles.messageContent}>
+          <Text style={styles.messageField}>From: {example.content.from}</Text>
+          {example.content.subject && (
+            <Text style={styles.messageField}>Subject: {example.content.subject}</Text>
+          )}
+          <Text style={styles.messageBody}>{example.content.body}</Text>
+          <Text style={styles.messageTime}>{example.content.time}</Text>
+        </View>
+
+        <View style={styles.swipeHint}>
+          <View style={styles.swipeAction}>
+            <X size={24} color="#FF3B30" />
+            <Text style={[styles.swipeText, { color: '#FF3B30' }]}>
+              Swipe left if suspicious
+            </Text>
+          </View>
+          <View style={styles.swipeAction}>
+            <Check size={24} color="#32C759" />
+            <Text style={[styles.swipeText, { color: '#32C759' }]}>
+              Swipe right if safe
+            </Text>
+          </View>
+        </View>
+      </Animated.View>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.content}>
-        <Text style={styles.title}>Phishing Prevention</Text>
-
-        <View style={styles.progressContainer}>
-          <Text style={styles.progressText}>
-            Scenario {currentScenario + 1} of {PHISHING_SCENARIOS.length}
-          </Text>
-          <Text style={styles.foundText}>
-            Found {foundFlags.length} of {scenario.redFlags.length} red flags
-          </Text>
-        </View>
-
-        <View style={styles.scenarioCard}>
-          <View style={styles.scenarioHeader}>
-            <View style={styles.typeContainer}>
-              <ScenarioIcon size={20} color="#1A1A1A" />
-              <Text style={styles.typeText}>{scenario.type}</Text>
-            </View>
-            <Text style={styles.scenarioTitle}>{scenario.title}</Text>
-          </View>
-
-          <View style={styles.messageContainer}>
-            <Text style={styles.messageField}>From: {scenario.content.from}</Text>
-            {scenario.content.subject && (
-              <Text style={styles.messageField}>Subject: {scenario.content.subject}</Text>
-            )}
-            <Text style={styles.messageBody}>{scenario.content.body}</Text>
-            <Text style={styles.messageTime}>{scenario.content.time}</Text>
-          </View>
-
-          {scenario.redFlags.map((flag) => (
-            <TouchableOpacity
-              key={flag.element}
-              style={[
-                styles.flagIndicator,
-                { top: flag.position.y, left: flag.position.x },
-                (showAllFlags || foundFlags.includes(flag.element)) && styles.flagVisible,
-              ]}
-              onPress={() => handleFlagPress(flag.element)}
-            >
-              <AlertTriangle size={20} color="#FF3B30" />
-              <View style={styles.flagTooltip}>
-                <Text style={styles.flagTitle}>{flag.element}</Text>
-                <Text style={styles.flagDescription}>{flag.description}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-
+      <View style={styles.header}>
         <TouchableOpacity
-          style={styles.hintButton}
-          onPress={() => setShowAllFlags(!showAllFlags)}
+          style={styles.backButton}
+          onPress={() => router.back()}
         >
-          <Text style={styles.hintButtonText}>
-            {showAllFlags ? 'Hide Red Flags' : 'Show Red Flags'}
+          <ChevronLeft size={24} color="#1A1A1A" />
+          <Text style={styles.backText}>Back</Text>
+        </TouchableOpacity>
+        <Text style={styles.title}>Phishing Prevention</Text>
+      </View>
+
+      <View style={styles.scoreContainer}>
+        <Text style={styles.scoreText}>Score: {score}/{EXAMPLES.length}</Text>
+        <Text style={styles.progressText}>
+          Example {currentIndex + 1} of {EXAMPLES.length}
+        </Text>
+      </View>
+
+      <View style={styles.cardContainer}>
+        {renderExample()}
+        {showFeedback && (
+          <View style={[
+            styles.feedback,
+            feedbackType === 'correct' ? styles.feedbackCorrect : styles.feedbackIncorrect
+          ]}>
+            <Text style={styles.feedbackTitle}>
+              {feedbackType === 'correct' ? 'Correct!' : 'Incorrect!'}
+            </Text>
+            <Text style={styles.feedbackText}>
+              {EXAMPLES[currentIndex].indicators.map((indicator) => `• ${indicator}\n`)}
+            </Text>
+          </View>
+        )}
+      </View>
+
+      {currentIndex >= EXAMPLES.length && (
+        <TouchableOpacity
+          style={styles.completeButton}
+          onPress={() => {
+            markModuleComplete('phishing-prevention');
+            router.back();
+          }}
+        >
+          <Text style={styles.completeButtonText}>
+            Complete Module ({score}/{EXAMPLES.length} correct)
           </Text>
         </TouchableOpacity>
-
-        {currentScenario === PHISHING_SCENARIOS.length - 1 &&
-          foundFlags.length === scenario.redFlags.length && (
-          <TouchableOpacity
-            style={styles.completeButton}
-            onPress={() => {
-              markModuleComplete('phishing-prevention');
-              router.back();
-            }}
-          >
-            <Text style={styles.completeButtonText}>Mark as Complete</Text>
-          </TouchableOpacity>
-        )}
-      </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
@@ -224,64 +256,71 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F2F2F7',
   },
-  content: {
-    flex: 1,
+  header: {
     padding: 20,
+    paddingTop: 60,
+    backgroundColor: '#FFFFFF',
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  backText: {
+    fontSize: 16,
+    color: '#1A1A1A',
+    marginLeft: 4,
+    fontFamily: 'Inter_500Medium',
   },
   title: {
     fontSize: 28,
     fontFamily: 'Inter_600SemiBold',
     color: '#1A1A1A',
-    marginBottom: 24,
   },
-  progressContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
+  scoreContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  scoreText: {
+    fontSize: 18,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#007AFF',
   },
   progressText: {
-    fontSize: 16,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#1A1A1A',
-    textAlign: 'center',
-  },
-  foundText: {
     fontSize: 14,
-    fontFamily: 'Inter_400Regular',
     color: '#8E8E93',
-    textAlign: 'center',
+    fontFamily: 'Inter_400Regular',
     marginTop: 4,
   },
-  scenarioCard: {
+  cardContainer: {
+    flex: 1,
+    padding: 20,
+  },
+  card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
+    padding: 20,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
   },
-  scenarioHeader: {
-    marginBottom: 16,
-  },
-  typeContainer: {
+  cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 16,
   },
-  typeText: {
-    fontSize: 14,
-    fontFamily: 'Inter_500Medium',
-    color: '#1A1A1A',
-    marginLeft: 8,
-  },
-  scenarioTitle: {
+  cardTitle: {
     fontSize: 18,
     fontFamily: 'Inter_600SemiBold',
     color: '#1A1A1A',
+    marginLeft: 12,
   },
-  messageContainer: {
+  messageContent: {
     backgroundColor: '#F2F2F7',
     borderRadius: 8,
-    padding: 12,
+    padding: 16,
   },
   messageField: {
     fontSize: 14,
@@ -298,49 +337,49 @@ const styles = StyleSheet.create({
   },
   messageTime: {
     fontSize: 12,
-    fontFamily: 'Inter_400Regular',
     color: '#8E8E93',
     textAlign: 'right',
-  },
-  flagIndicator: {
-    position: 'absolute',
-    opacity: 0,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    padding: 8,
-  },
-  flagVisible: {
-    opacity: 1,
-  },
-  flagTooltip: {
-    backgroundColor: '#FFEFEF',
-    borderRadius: 8,
-    padding: 8,
-    marginLeft: 8,
-    flex: 1,
-  },
-  flagTitle: {
-    fontSize: 14,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#FF3B30',
-    marginBottom: 4,
-  },
-  flagDescription: {
-    fontSize: 12,
     fontFamily: 'Inter_400Regular',
-    color: '#FF3B30',
   },
-  hintButton: {
-    backgroundColor: '#F2F2F7',
-    borderRadius: 12,
-    padding: 16,
+  swipeHint: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5EA',
+  },
+  swipeAction: {
     alignItems: 'center',
-    marginBottom: 20,
   },
-  hintButtonText: {
-    fontSize: 16,
+  swipeText: {
+    fontSize: 12,
+    fontFamily: 'Inter_500Medium',
+    marginTop: 4,
+  },
+  feedback: {
+    position: 'absolute',
+    top: 0,
+    left: 20,
+    right: 20,
+    padding: 20,
+    borderRadius: 12,
+  },
+  feedbackCorrect: {
+    backgroundColor: '#E8F8EF',
+  },
+  feedbackIncorrect: {
+    backgroundColor: '#FFEFEF',
+  },
+  feedbackTitle: {
+    fontSize: 18,
     fontFamily: 'Inter_600SemiBold',
-    color: '#007AFF',
+    marginBottom: 12,
+  },
+  feedbackText: {
+    fontSize: 14,
+    fontFamily: 'Inter_400Regular',
+    lineHeight: 20,
   },
   completeButton: {
     backgroundColor: '#007AFF',
