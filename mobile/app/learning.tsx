@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   Smartphone,
   AlertCircle,
+  ChevronLeft,
 } from 'lucide-react-native';
 import { useLearningProgress } from '@/contexts/LearningProgressContext';
 
@@ -67,6 +68,13 @@ export default function LearningScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.push('/settings')}
+        >
+          <ChevronLeft size={24} color="#1A1A1A" />
+          <Text style={styles.backText}>Back</Text>
+        </TouchableOpacity>
         <Text style={styles.title}>Security Learning</Text>
       </View>
 
@@ -119,6 +127,18 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 20,
+    paddingTop: 60,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  backText: {
+    fontSize: 16,
+    color: '#1A1A1A',
+    marginLeft: 4,
+    fontFamily: 'Inter_500Medium',
   },
   title: {
     fontSize: 28,

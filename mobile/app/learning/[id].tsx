@@ -2,6 +2,10 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import PasswordSecurityScreen from '../learning/password-security';
+import SecureAuthScreen from '../learning/secure-auth';
+import TransactionSafetyScreen from '../learning/transaction-safety';
+import DeviceSecurityScreen from '../learning/device-security';
+import PhishingPreventionScreen from '../learning/phishing-prevention';
 
 export default function LearningModuleScreen() {
   const { id } = useLocalSearchParams();
@@ -9,7 +13,10 @@ export default function LearningModuleScreen() {
   // Map module IDs to their respective screens
   const moduleScreens: { [key: string]: JSX.Element } = {
     'password-security': <PasswordSecurityScreen />,
-    // Add other module screens here as they're implemented
+    'secure-auth': <SecureAuthScreen />,
+    'transaction-safety': <TransactionSafetyScreen />,
+    'device-security': <DeviceSecurityScreen />,
+    'phishing-prevention': <PhishingPreventionScreen />
   };
 
   return (
