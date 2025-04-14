@@ -15,6 +15,13 @@ from app.models.user import User, Session
 from app.schemas.user import UserSchema
 from app.utils.auth import generate_mfa_secret, get_totp_uri
 
+'''
+Issues to investigate:
+    - Rate limiting is not implemented, which allows for brute for attacks in login
+    - Logout functionality disables sessions, not revoking the JWT and deleting from DB. Allows for session Hijacking
+    - Long session duration without any refresh token mechanism
+'''
+
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 user_schema = UserSchema()
 
