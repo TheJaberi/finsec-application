@@ -1,6 +1,23 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  Platform,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronRight, User, Bell, Shield, CreditCard, CircleHelp as HelpCircle, LogOut } from 'lucide-react-native';
+import {
+  ChevronRight,
+  User,
+  Bell,
+  Shield,
+  CreditCard,
+  CircleHelp as HelpCircle,
+  LogOut,
+  GraduationCap,
+} from 'lucide-react-native';
 import { useUser } from '@/contexts/UserContext';
 import { router } from 'expo-router';
 
@@ -51,28 +68,53 @@ export default function SettingsScreen() {
     router.push('/help-center');
   };
 
+  const navigateToLearning = () => {
+    router.push('/learning');
+  };
+
   const settingsSections = [
     {
       title: 'Account',
       items: [
-        { icon: User, label: 'Personal Information', onPress: navigateToPersonalInfo },
-        { icon: Bell, label: 'Notifications', onPress: navigateToNotifications },
+        {
+          icon: User,
+          label: 'Personal Information',
+          onPress: navigateToPersonalInfo,
+        },
+        {
+          icon: Bell,
+          label: 'Notifications',
+          onPress: navigateToNotifications,
+        },
         { icon: Shield, label: 'Security', onPress: navigateToSecurity },
-        { icon: CreditCard, label: 'Payment Methods', onPress: navigateToPaymentMethods },
-      ]
+        {
+          icon: CreditCard,
+          label: 'Payment Methods',
+          onPress: navigateToPaymentMethods,
+        },
+        {
+          icon: GraduationCap,
+          label: 'Security Learning',
+          onPress: navigateToLearning,
+        },
+      ],
     },
     {
       title: 'Support',
       items: [
-        { icon: HelpCircle, label: 'Help Center', onPress: navigateToHelpCenter },
-        { 
-          icon: LogOut, 
-          label: 'Sign Out', 
+        {
+          icon: HelpCircle,
+          label: 'Help Center',
+          onPress: navigateToHelpCenter,
+        },
+        {
+          icon: LogOut,
+          label: 'Sign Out',
           danger: true,
-          onPress: handleSignOut 
-        }
-      ]
-    }
+          onPress: handleSignOut,
+        },
+      ],
+    },
   ];
 
   return (
@@ -83,17 +125,20 @@ export default function SettingsScreen() {
       </View>
 
       {/* Profile Section */}
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.profileSection}
         onPress={navigateToPersonalInfo}
       >
         <View style={styles.profileAvatar}>
           <Text style={styles.avatarText}>
-            {user.firstName[0]}{user.lastName[0]}
+            {user.firstName[0]}
+            {user.lastName[0]}
           </Text>
         </View>
         <View style={styles.profileInfo}>
-          <Text style={styles.profileName}>{user.firstName} {user.lastName}</Text>
+          <Text style={styles.profileName}>
+            {user.firstName} {user.lastName}
+          </Text>
           <Text style={styles.profileEmail}>{user.email}</Text>
         </View>
         <ChevronRight size={20} color="#8E8E93" />
@@ -119,7 +164,7 @@ export default function SettingsScreen() {
                     <Text
                       style={[
                         styles.settingsItemLabel,
-                        item.danger && styles.dangerText
+                        item.danger && styles.dangerText,
                       ]}
                     >
                       {item.label}
