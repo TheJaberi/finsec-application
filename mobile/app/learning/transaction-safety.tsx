@@ -3,7 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useEffect, useRef } from 'react';
 import { useLearningProgress } from '@/contexts/LearningProgressContext';
 import { router } from 'expo-router';
-import { AlertTriangle, Check, X, DollarSign, Clock, MapPin, AlertCircle } from 'lucide-react-native';
+import { AlertTriangle, Check, X, DollarSign, Clock, MapPin, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react-native';
 
 const SCENARIOS = [
   {
@@ -75,24 +75,22 @@ export default function TransactionSafetyScreen() {
     const correct = isRisky === SCENARIOS[currentScenario].riskyTransaction;
     if (correct) setScore(score + 1);
     setShowResult(true);
+  };
 
-    setTimeout(() => {
-      if (currentScenario < SCENARIOS.length - 1) {
-        Animated.timing(slideAnim, {
-          toValue: -400,
-          duration: 300,
-          useNativeDriver: true,
-        }).start(() => {
-          setCurrentScenario(currentScenario + 1);
-          setShowResult(false);
-          slideAnim.setValue(400);
-          Animated.spring(slideAnim, {
-            toValue: 0,
-            useNativeDriver: true,
-          }).start();
-        });
-      }
-    }, 2000);
+  const handleNext = () => {
+    Animated.timing(slideAnim, {
+      toValue: -400,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setCurrentScenario(currentScenario + 1);
+      setShowResult(false);
+      slideAnim.setValue(400);
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+      }).start();
+    });
   };
 
   const renderTransaction = () => {
@@ -146,18 +144,62 @@ export default function TransactionSafetyScreen() {
     );
   };
 
+  if (currentScenario >= SCENARIOS.length) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <ChevronLeft size={24} color="#1A1A1A" />
+            <Text style={styles.backText}>Back</Text>
+          </TouchableOpacity>
+          <Text style={styles.title}>Transaction Safety</Text>
+        </View>
+        <View style={styles.completionContainer}>
+          <Text style={styles.completionTitle}>Module Complete!</Text>
+          <Text style={styles.scoreText}>
+            Final Score: {score}/{SCENARIOS.length}
+          </Text>
+          <TouchableOpacity
+            style={styles.completeButton}
+            onPress={() => {
+              markModuleComplete('transaction-safety');
+              router.back();
+            }}
+          >
+            <Text style={styles.completeButtonText}>Complete Module</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.content}>
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <ChevronLeft size={24} color="#1A1A1A" />
+          <Text style={styles.backText}>Back</Text>
+        </TouchableOpacity>
         <Text style={styles.title}>Transaction Safety</Text>
-        
+      </View>
+
+      <ScrollView style={styles.content}>
         <View style={styles.scoreContainer}>
           <Text style={styles.scoreText}>Score: {score}/{SCENARIOS.length}</Text>
+          <Text style={styles.progressText}>
+            Scenario {currentScenario + 1} of {SCENARIOS.length}
+          </Text>
         </View>
 
         {renderTransaction()}
 
-        {!showResult && (
+        {!showResult ? (
           <View style={styles.actionButtons}>
             <TouchableOpacity
               style={[styles.actionButton, styles.safeButton]}
@@ -175,17 +217,13 @@ export default function TransactionSafetyScreen() {
               <Text style={styles.buttonText}>Risky</Text>
             </TouchableOpacity>
           </View>
-        )}
-
-        {currentScenario === SCENARIOS.length - 1 && showResult && (
+        ) : currentScenario < SCENARIOS.length - 1 && (
           <TouchableOpacity
-            style={styles.completeButton}
-            onPress={() => {
-              markModuleComplete('transaction-safety');
-              router.back();
-            }}
+            style={styles.nextButton}
+            onPress={handleNext}
           >
-            <Text style={styles.completeButtonText}>Mark as Complete</Text>
+            <Text style={styles.nextButtonText}>Next Scenario</Text>
+            <ChevronRight size={20} color="#FFFFFF" />
           </TouchableOpacity>
         )}
       </ScrollView>
@@ -198,6 +236,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F2F2F7',
   },
+  header: {
+    padding: 20,
+    paddingTop: 60,
+    backgroundColor: '#FFFFFF',
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  backText: {
+    fontSize: 16,
+    color: '#1A1A1A',
+    marginLeft: 4,
+    fontFamily: 'Inter_500Medium',
+  },
   content: {
     flex: 1,
     padding: 20,
@@ -206,7 +260,6 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontFamily: 'Inter_600SemiBold',
     color: '#1A1A1A',
-    marginBottom: 24,
   },
   scoreContainer: {
     backgroundColor: '#FFFFFF',
@@ -219,6 +272,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: 'Inter_600SemiBold',
     color: '#007AFF',
+  },
+  progressText: {
+    fontSize: 14,
+    color: '#8E8E93',
+    fontFamily: 'Inter_400Regular',
+    marginTop: 4,
   },
   transactionCard: {
     backgroundColor: '#FFFFFF',
@@ -280,6 +339,20 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_600SemiBold',
     marginLeft: 8,
   },
+  nextButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nextButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontFamily: 'Inter_600SemiBold',
+    marginRight: 8,
+  },
   resultContainer: {
     marginTop: 16,
     padding: 12,
@@ -315,12 +388,25 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_500Medium',
     marginLeft: 8,
   },
+  completionContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  completionTitle: {
+    fontSize: 24,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#1A1A1A',
+    marginBottom: 16,
+  },
   completeButton: {
     backgroundColor: '#007AFF',
     borderRadius: 12,
     padding: 16,
-    margin: 20,
+    marginTop: 20,
     alignItems: 'center',
+    width: '100%',
   },
   completeButtonText: {
     color: '#FFFFFF',

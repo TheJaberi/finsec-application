@@ -70,6 +70,7 @@ export default function PhishingPreventionScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showCompletion, setShowCompletion] = useState(false);
   const [feedbackType, setFeedbackType] = useState<'correct' | 'incorrect' | null>(null);
   const position = useRef(new Animated.ValueXY()).current;
   const { updateModuleProgress, markModuleComplete } = useLearningProgress();
@@ -129,7 +130,9 @@ export default function PhishingPreventionScreen() {
     setTimeout(() => {
       setShowFeedback(false);
       position.setValue({ x: 0, y: 0 });
-      if (currentIndex < EXAMPLES.length - 1) {
+      if (currentIndex === EXAMPLES.length - 1) {
+        setShowCompletion(true);
+      } else {
         setCurrentIndex(currentIndex + 1);
       }
     }, 2000);
@@ -153,7 +156,7 @@ export default function PhishingPreventionScreen() {
   };
 
   const renderExample = () => {
-    if (currentIndex >= EXAMPLES.length) return null;
+    if (showCompletion) return null;
     const example = EXAMPLES[currentIndex];
 
     return (
@@ -210,42 +213,51 @@ export default function PhishingPreventionScreen() {
         <Text style={styles.title}>Phishing Prevention</Text>
       </View>
 
-      <View style={styles.scoreContainer}>
-        <Text style={styles.scoreText}>Score: {score}/{EXAMPLES.length}</Text>
-        <Text style={styles.progressText}>
-          Example {currentIndex + 1} of {EXAMPLES.length}
-        </Text>
-      </View>
-
-      <View style={styles.cardContainer}>
-        {renderExample()}
-        {showFeedback && (
-          <View style={[
-            styles.feedback,
-            feedbackType === 'correct' ? styles.feedbackCorrect : styles.feedbackIncorrect
-          ]}>
-            <Text style={styles.feedbackTitle}>
-              {feedbackType === 'correct' ? 'Correct!' : 'Incorrect!'}
-            </Text>
-            <Text style={styles.feedbackText}>
-              {EXAMPLES[currentIndex].indicators.map((indicator) => `• ${indicator}\n`)}
+      {!showCompletion ? (
+        <>
+          <View style={styles.scoreContainer}>
+            <Text style={styles.scoreText}>Score: {score}/{EXAMPLES.length}</Text>
+            <Text style={styles.progressText}>
+              Example {currentIndex + 1} of {EXAMPLES.length}
             </Text>
           </View>
-        )}
-      </View>
 
-      {currentIndex >= EXAMPLES.length && (
-        <TouchableOpacity
-          style={styles.completeButton}
-          onPress={() => {
-            markModuleComplete('phishing-prevention');
-            router.back();
-          }}
-        >
-          <Text style={styles.completeButtonText}>
-            Complete Module ({score}/{EXAMPLES.length} correct)
+          <View style={styles.cardContainer}>
+            {renderExample()}
+            {showFeedback && (
+              <View style={[
+                styles.feedback,
+                feedbackType === 'correct' ? styles.feedbackCorrect : styles.feedbackIncorrect
+              ]}>
+                <Text style={styles.feedbackTitle}>
+                  {feedbackType === 'correct' ? 'Correct!' : 'Incorrect!'}
+                </Text>
+                <Text style={styles.feedbackText}>
+                  {EXAMPLES[currentIndex].indicators.map((indicator) => `• ${indicator}\n`)}
+                </Text>
+              </View>
+            )}
+          </View>
+        </>
+      ) : (
+        <View style={styles.completionContainer}>
+          <Text style={styles.completionTitle}>Congratulations!</Text>
+          <Text style={[styles.completionText, { marginBottom: 20 }]}>
+            You've completed all phishing scenarios
           </Text>
-        </TouchableOpacity>
+          <Text style={styles.scoreText}>
+            Final Score: {score}/{EXAMPLES.length}
+          </Text>
+          <TouchableOpacity
+            style={styles.completeButton}
+            onPress={() => {
+              markModuleComplete('phishing-prevention');
+              router.back();
+            }}
+          >
+            <Text style={styles.completeButtonText}>Mark as Complete</Text>
+          </TouchableOpacity>
+        </View>
       )}
     </SafeAreaView>
   );
@@ -381,12 +393,31 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_400Regular',
     lineHeight: 20,
   },
+  completionContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  completionTitle: {
+    fontSize: 24,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#1A1A1A',
+    marginBottom: 16,
+  },
+  completionText: {
+    fontSize: 16,
+    color: '#8E8E93',
+    fontFamily: 'Inter_500Medium',
+    textAlign: 'center',
+  },
   completeButton: {
     backgroundColor: '#007AFF',
     borderRadius: 12,
     padding: 16,
-    margin: 20,
+    marginTop: 32,
     alignItems: 'center',
+    width: '100%',
   },
   completeButtonText: {
     color: '#FFFFFF',
