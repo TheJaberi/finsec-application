@@ -13,7 +13,7 @@ def login():
     # Assuming the API is running and accessible during the test
     try:
         response = requests.post(f"{BASE_URL}/auth/login", json={
-            "email": "john.doe@example.com", # Ensure this user exists in the test environment
+            "email": "layla.hassan@example.com", # Ensure this user exists in the test environment
             "password": "password123"
         }, timeout=10) # Added timeout
         response.raise_for_status() # Raise an exception for bad status codes
