@@ -20,12 +20,12 @@ jobs:
         with:
           python-version: '3.9'
 
-      # 3. Install dependencies and tools (Bandit and pytest)
+      # 3. Install dependencies and tools (adding requests along with bandit and pytest)
       - name: Install Dependencies
         run: |
           cd finsec-api/finsec_api
           pip install -r requirements.txt
-          pip install bandit pytest
+          pip install requests bandit pytest
 
       # 4. Run backend tests
       - name: Run Tests
