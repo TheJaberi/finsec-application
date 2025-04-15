@@ -1,0 +1,125 @@
+name: Backend PR Test & Vulnerability Scan
+
+# Trigger the workflow on pull requests affecting the backend directory only
+on:
+  pull_request:
+    paths:
+      - 'finsec-api/**'
+
+jobs:
+  test-scan:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Check out the repository code
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # 2. Set up Python (here using Python 3.9; change as needed)
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      # 3. Install dependencies and tools (Bandit and pytest)
+      - name: Install Dependencies
+        run: |
+          cd finsec-api
+          pip install -r requirements.txt
+          pip install bandit pytest
+
+      # 4. Run backend tests
+      - name: Run Tests
+        run: |
+          cd finsec-api
+          pytest --maxfail=1 --disable-warnings -q
+
+      # 5. Run Bandit vulnerability scan and output results in JSON
+      - name: Run Bandit Vulnerability Scan
+        run: |
+          cd finsec-api
+          bandit -r . -f json -o bandit_report.json
+
+      # 6. (Optional) Upload the Bandit report as an artifact for later review
+      - name: Upload Bandit Report Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: bandit-report
+          path: finsec-api/bandit_report.json
+
+      # 7. Process the Bandit JSON report and create an enhanced Markdown summary
+      - name: Create Vulnerability Summary Comment
+        run: |
+          cd finsec-api
+          python - << 'EOF'
+          import json
+          import sys
+
+          # Mapping severity to GitHub emoji icons
+          severity_icons = {
+              "HIGH": ":red_circle:",
+              "MEDIUM": ":large_yellow_circle:",
+              "LOW": ":green_circle:"
+          }
+
+          try:
+              with open("bandit_report.json", "r") as f:
+                  report = json.load(f)
+          except Exception as err:
+              print(f"Error reading bandit_report.json: {err}")
+              sys.exit(1)
+
+          issues = report.get("results", [])
+          total_issues = len(issues)
+
+          # Begin the Markdown content with a header and brief description
+          md_lines = []
+          md_lines.append("# Vulnerability Scan Report")
+          md_lines.append("")
+          md_lines.append("This report summarizes the results of the automatic vulnerability scan for the backend. The scan inspects the code for potential security risks. Below is a breakdown of identified issues, sorted by severity, along with recommendations for remediation if needed.")
+          md_lines.append("")
+          md_lines.append(f"**Total Vulnerabilities Found:** {total_issues}")
+          md_lines.append("")
+          if total_issues == 0:
+              md_lines.append("### :white_check_mark: No vulnerabilities found!")
+          else:
+              # Define an order for sorting: HIGH first, then MEDIUM, then LOW
+              severity_order = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
+              issues_sorted = sorted(issues, key=lambda x: severity_order.get(x.get("issue_severity", "LOW"), 3))
+
+              # Add details of severity levels
+              md_lines.append("**Severity Legend:**")
+              md_lines.append("- :red_circle: **HIGH**: Immediate attention is required.")
+              md_lines.append("- :large_yellow_circle: **MEDIUM**: Review and address in due course.")
+              md_lines.append("- :green_circle: **LOW**: Low priority for immediate remediation.")
+              md_lines.append("")
+              md_lines.append("## Detailed Vulnerability List")
+              md_lines.append("")
+              md_lines.append("| Severity | Issue | File | Line | Test ID |")
+              md_lines.append("| --- | --- | --- | --- | --- |")
+              for issue in issues_sorted:
+                  sev = issue.get("issue_severity", "UNKNOWN")
+                  icon = severity_icons.get(sev, "")
+                  # Clean up the issue text for Markdown readability
+                  text = issue.get("issue_text", "").replace("\n", " ").strip()
+                  filename = issue.get("filename", "")
+                  line_number = issue.get("line_number", "")
+                  test_id = issue.get("test_id", "")
+                  md_lines.append(f"| **{icon} {sev}** | {text} | {filename} | {line_number} | {test_id} |")
+              md_lines.append("")
+              md_lines.append("Please review the issues above and address them as appropriate. This report is automatically generated and will update with each pull request.")
+
+          # Write the Markdown summary to a file
+          summary_md = "\n".join(md_lines)
+          with open("vuln_summary.md", "w") as f:
+              f.write(summary_md)
+          print(summary_md)
+          EOF
+
+      # 8. Post the vulnerability summary as a PR comment using a community action
+      - name: Comment Vulnerability Summary on PR
+        uses: peter-evans/create-or-update-comment@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            $(cat finsec-api/vuln_summary.md)
