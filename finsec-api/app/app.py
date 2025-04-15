@@ -2,7 +2,7 @@ from flask import Flask, jsonify
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 from models import db
-from routes.bills import bills_bp
+from routes.bills import bills_bp 
 
 def create_app():
     app = Flask(__name__)
@@ -20,7 +20,7 @@ def create_app():
     def health():
         return jsonify({'status': 'healthy'})
 
-    return app
+    return app 
 
 app = create_app()
 
