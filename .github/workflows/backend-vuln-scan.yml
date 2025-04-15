@@ -41,7 +41,7 @@ jobs:
 
       # 6. (Optional) Upload the Bandit report as an artifact for later review
       - name: Upload Bandit Report Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: bandit-report
           path: finsec-api/bandit_report.json
