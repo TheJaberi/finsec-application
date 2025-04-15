@@ -1,16 +1,34 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Animated,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useEffect, useRef } from 'react';
 import { useLearningProgress } from '@/contexts/LearningProgressContext';
 import { router } from 'expo-router';
 import { useBadges } from '@/contexts/BadgesContext';
-import { AlertTriangle, Check, X, DollarSign, Clock, MapPin, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react-native';
+import {
+  AlertTriangle,
+  Check,
+  X,
+  DollarSign,
+  Clock,
+  MapPin,
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react-native';
 
 const SCENARIOS = [
   {
     id: 'unusual-amount',
     title: 'Unusual Amount',
-    description: 'A transfer that is significantly larger than your typical transactions.',
+    description:
+      'A transfer that is significantly larger than your typical transactions.',
     transaction: {
       amount: '$5,000',
       recipient: 'Unknown Trading Ltd.',
@@ -108,7 +126,7 @@ export default function TransactionSafetyScreen() {
       >
         <Text style={styles.scenarioTitle}>{scenario.title}</Text>
         <Text style={styles.scenarioDescription}>{scenario.description}</Text>
-        
+
         <View style={styles.transactionDetails}>
           <View style={styles.detailRow}>
             <DollarSign size={20} color="#8E8E93" />
@@ -116,7 +134,9 @@ export default function TransactionSafetyScreen() {
           </View>
           <View style={styles.detailRow}>
             <MapPin size={20} color="#8E8E93" />
-            <Text style={styles.detailText}>Location: {transaction.location}</Text>
+            <Text style={styles.detailText}>
+              Location: {transaction.location}
+            </Text>
           </View>
           <View style={styles.detailRow}>
             <Clock size={20} color="#8E8E93" />
@@ -131,7 +151,9 @@ export default function TransactionSafetyScreen() {
                 <AlertTriangle size={24} color="#FF3B30" />
                 <Text style={styles.warningTitle}>Red Flags:</Text>
                 {scenario.redFlags.map((flag, index) => (
-                  <Text key={index} style={styles.redFlag}>• {flag}</Text>
+                  <Text key={index} style={styles.redFlag}>
+                    • {flag}
+                  </Text>
                 ))}
               </View>
             ) : (
@@ -146,7 +168,7 @@ export default function TransactionSafetyScreen() {
     );
   };
 
-  if (currentScenario >= SCENARIOS.length) {
+  if (currentScenario === SCENARIOS.length) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
@@ -172,7 +194,7 @@ export default function TransactionSafetyScreen() {
               router.back();
             }}
           >
-            <Text style={styles.completeButtonText}>Complete Module</Text>
+            <Text style={styles.completeButtonText}>Mark as Complete</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -194,7 +216,9 @@ export default function TransactionSafetyScreen() {
 
       <ScrollView style={styles.content}>
         <View style={styles.scoreContainer}>
-          <Text style={styles.scoreText}>Score: {score}/{SCENARIOS.length}</Text>
+          <Text style={styles.scoreText}>
+            Score: {score}/{SCENARIOS.length}
+          </Text>
           <Text style={styles.progressText}>
             Scenario {currentScenario + 1} of {SCENARIOS.length}
           </Text>
@@ -220,14 +244,13 @@ export default function TransactionSafetyScreen() {
               <Text style={styles.buttonText}>Risky</Text>
             </TouchableOpacity>
           </View>
-        ) : currentScenario < SCENARIOS.length - 1 && (
-          <TouchableOpacity
-            style={styles.nextButton}
-            onPress={handleNext}
-          >
-            <Text style={styles.nextButtonText}>Next Scenario</Text>
-            <ChevronRight size={20} color="#FFFFFF" />
-          </TouchableOpacity>
+        ) : (
+          currentScenario < SCENARIOS.length - 1 && (
+            <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
+              <Text style={styles.nextButtonText}>Next Scenario</Text>
+              <ChevronRight size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+          )
         )}
       </ScrollView>
     </SafeAreaView>
