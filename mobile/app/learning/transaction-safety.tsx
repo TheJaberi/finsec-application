@@ -22,6 +22,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react-native';
+import ConfettiCannon from 'react-native-confetti-cannon';
 
 const SCENARIOS = [
   {
@@ -82,6 +83,7 @@ const SCENARIOS = [
 export default function TransactionSafetyScreen() {
   const [currentScenario, setCurrentScenario] = useState(0);
   const [showResult, setShowResult] = useState(false);
+  const [showCompletion, setShowCompletion] = useState(false);
   const [score, setScore] = useState(0);
   const slideAnim = useRef(new Animated.Value(0)).current;
   const { updateModuleProgress, markModuleComplete } = useLearningProgress();
@@ -112,6 +114,7 @@ export default function TransactionSafetyScreen() {
       }).start();
     });
   };
+
 
   const renderTransaction = () => {
     const scenario = SCENARIOS[currentScenario];
@@ -168,38 +171,6 @@ export default function TransactionSafetyScreen() {
     );
   };
 
-  if (currentScenario === SCENARIOS.length) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <ChevronLeft size={24} color="#1A1A1A" />
-            <Text style={styles.backText}>Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>Transaction Safety</Text>
-        </View>
-        <View style={styles.completionContainer}>
-          <Text style={styles.completionTitle}>Module Complete!</Text>
-          <Text style={styles.scoreText}>
-            Final Score: {score}/{SCENARIOS.length}
-          </Text>
-          <TouchableOpacity
-            style={styles.completeButton}
-            onPress={() => {
-              markModuleComplete('transaction-safety');
-              awardBadge('transactionMaster');
-              router.back();
-            }}
-          >
-            <Text style={styles.completeButtonText}>Mark as Complete</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -214,45 +185,85 @@ export default function TransactionSafetyScreen() {
         <Text style={styles.title}>Transaction Safety</Text>
       </View>
 
-      <ScrollView style={styles.content}>
-        <View style={styles.scoreContainer}>
-          <Text style={styles.scoreText}>
-            Score: {score}/{SCENARIOS.length}
-          </Text>
-          <Text style={styles.progressText}>
-            Scenario {currentScenario + 1} of {SCENARIOS.length}
-          </Text>
-        </View>
-
-        {renderTransaction()}
-
-        {!showResult ? (
-          <View style={styles.actionButtons}>
-            <TouchableOpacity
-              style={[styles.actionButton, styles.safeButton]}
-              onPress={() => handleAnswer(false)}
-            >
-              <Check size={24} color="#FFFFFF" />
-              <Text style={styles.buttonText}>Safe</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.actionButton, styles.riskyButton]}
-              onPress={() => handleAnswer(true)}
-            >
-              <AlertTriangle size={24} color="#FFFFFF" />
-              <Text style={styles.buttonText}>Risky</Text>
-            </TouchableOpacity>
+      {currentScenario < SCENARIOS.length ? (
+        <ScrollView style={styles.content}>
+          <View style={styles.scoreContainer}>
+            <Text style={styles.scoreText}>
+              Score: {score}/{SCENARIOS.length}
+            </Text>
+            <Text style={styles.progressText}>
+              Scenario {currentScenario + 1} of {SCENARIOS.length}
+            </Text>
           </View>
-        ) : (
-          currentScenario < SCENARIOS.length - 1 && (
-            <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-              <Text style={styles.nextButtonText}>Next Scenario</Text>
-              <ChevronRight size={20} color="#FFFFFF" />
+
+          {renderTransaction()}
+
+          {!showResult ? (
+            <View style={styles.actionButtons}>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.safeButton]}
+                onPress={() => handleAnswer(false)}
+              >
+                <Check size={24} color="#FFFFFF" />
+                <Text style={styles.buttonText}>Safe</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionButton, styles.riskyButton]}
+                onPress={() => handleAnswer(true)}
+              >
+                <AlertTriangle size={24} color="#FFFFFF" />
+                <Text style={styles.buttonText}>Risky</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            currentScenario < SCENARIOS.length - 1 ? (
+              <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
+                <Text style={styles.nextButtonText}>Next Scenario</Text>
+                <ChevronRight size={20} color="#FFFFFF" />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={styles.nextButton}
+                onPress={() => {
+                  markModuleComplete('transaction-safety');
+                  awardBadge('transactionMaster');
+                  router.back();
+                }}
+              >
+                <Text style={styles.nextButtonText}>Mark as Complete</Text>
+                <ChevronRight size={20} color="#FFFFFF" />
+              </TouchableOpacity>
+            )
+          )}
+        </ScrollView>
+      ) : (
+        <SafeAreaView style={styles.container}>
+          <View style={styles.header}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => router.back()}
+            >
+              <ChevronLeft size={24} color="#1A1A1A" />
+              <Text style={styles.backText}>Back</Text>
             </TouchableOpacity>
-          )
-        )}
-      </ScrollView>
+            <Text style={styles.title}>Transaction Safety</Text>
+          </View>
+          <View style={styles.completionContainer}>
+            <ConfettiCannon
+              count={50}
+              origin={{ x: -10, y: 0 }}
+              fallSpeed={2500}
+              fadeOut={true}
+              autoStart={true}
+            />
+            <Text style={styles.completionTitle}>Module Complete!</Text>
+            <Text style={styles.scoreText}>
+              Final Score: {score}/{SCENARIOS.length}
+            </Text>
+          </View>
+        </SafeAreaView>
+      )}
     </SafeAreaView>
   );
 }
