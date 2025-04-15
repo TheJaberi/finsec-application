@@ -1,5 +1,5 @@
 # FinSec Banking API
-hi
+yo
 A secure banking API built with Flask and MySQL that provides authentication and financial management capabilities.
 
 ## Features
