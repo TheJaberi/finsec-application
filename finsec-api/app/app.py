@@ -20,7 +20,7 @@ def create_app():
     def health():
         return jsonify({'status': 'healthy'})
 
-    return app
+    return app 
 
 app = create_app()
 
