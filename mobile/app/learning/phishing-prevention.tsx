@@ -1,9 +1,27 @@
-import { View, Text, StyleSheet, Animated, PanResponder, TouchableOpacity, Dimensions } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Animated,
+  PanResponder,
+  TouchableOpacity,
+  Dimensions,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLearningProgress } from '@/contexts/LearningProgressContext';
 import { router } from 'expo-router';
-import { AlertTriangle, Mail, MessageSquare, Check, X, AlertCircle, ChevronLeft } from 'lucide-react-native';
+import { useBadges } from '@/contexts/BadgesContext';
+import {
+  AlertTriangle,
+  Mail,
+  MessageSquare,
+  Check,
+  X,
+  AlertCircle,
+  ChevronLeft,
+} from 'lucide-react-native';
+import ConfettiCannon from 'react-native-confetti-cannon';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SWIPE_THRESHOLD = 0.25 * SCREEN_WIDTH;
@@ -17,7 +35,8 @@ const EXAMPLES = [
     content: {
       from: 'security@accounts-verify.com',
       subject: 'Urgent: Account Access Limited',
-      body: 'Dear valued customer,\n\nWe have detected unusual activity on your account. To prevent unauthorized access, your account has been temporarily limited. Click here to verify your identity: http://secure-verify-accounts.com/restore',
+      body:
+        'Dear valued customer,\n\nWe have detected unusual activity on your account. To prevent unauthorized access, your account has been temporarily limited. Click here to verify your identity: http://secure-verify-accounts.com/restore',
       time: '3:45 AM',
     },
     isSuspicious: true,
@@ -35,7 +54,8 @@ const EXAMPLES = [
     title: 'Package Delivery',
     content: {
       from: '+1-555-0123',
-      body: 'Your package is held at customs. Pay a small fee (2.99$) to release: http://track-delivery.co/pay',
+      body:
+        'Your package is held at customs. Pay a small fee (2.99$) to release: http://track-delivery.co/pay',
       time: 'Just now',
     },
     isSuspicious: true,
@@ -53,7 +73,8 @@ const EXAMPLES = [
     content: {
       from: 'statements@mybank.com',
       subject: 'Your Monthly Statement is Ready',
-      body: 'Your account statement for the period ending April 15, 2025 is now available in your online banking portal. Sign in to your account to view: https://mybank.com/statements',
+      body:
+        'Your account statement for the period ending April 15, 2025 is now available in your online banking portal. Sign in to your account to view: https://mybank.com/statements',
       time: '9:00 AM',
     },
     isSuspicious: false,
@@ -71,9 +92,11 @@ export default function PhishingPreventionScreen() {
   const [score, setScore] = useState(0);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showCompletion, setShowCompletion] = useState(false);
-  const [feedbackType, setFeedbackType] = useState<'correct' | 'incorrect' | null>(null);
+  const [feedbackType, setFeedbackType] =
+    useState<'correct' | 'incorrect' | null>(null);
   const position = useRef(new Animated.ValueXY()).current;
   const { updateModuleProgress, markModuleComplete } = useLearningProgress();
+  const { awardBadge } = useBadges();
 
   useEffect(() => {
     updateModuleProgress('phishing-prevention', `example-${currentIndex}`);
@@ -148,10 +171,7 @@ export default function PhishingPreventionScreen() {
   const getCardStyle = () => {
     const rotate = getRotation();
     return {
-      transform: [
-        { translateX: position.x },
-        { rotate },
-      ],
+      transform: [{ translateX: position.x }, { rotate }],
     };
   };
 
@@ -216,7 +236,9 @@ export default function PhishingPreventionScreen() {
       {!showCompletion ? (
         <>
           <View style={styles.scoreContainer}>
-            <Text style={styles.scoreText}>Score: {score}/{EXAMPLES.length}</Text>
+            <Text style={styles.scoreText}>
+              Score: {score}/{EXAMPLES.length}
+            </Text>
             <Text style={styles.progressText}>
               Example {currentIndex + 1} of {EXAMPLES.length}
             </Text>
@@ -225,15 +247,21 @@ export default function PhishingPreventionScreen() {
           <View style={styles.cardContainer}>
             {renderExample()}
             {showFeedback && (
-              <View style={[
-                styles.feedback,
-                feedbackType === 'correct' ? styles.feedbackCorrect : styles.feedbackIncorrect
-              ]}>
+              <View
+                style={[
+                  styles.feedback,
+                  feedbackType === 'correct'
+                    ? styles.feedbackCorrect
+                    : styles.feedbackIncorrect,
+                ]}
+              >
                 <Text style={styles.feedbackTitle}>
                   {feedbackType === 'correct' ? 'Correct!' : 'Incorrect!'}
                 </Text>
                 <Text style={styles.feedbackText}>
-                  {EXAMPLES[currentIndex].indicators.map((indicator) => `• ${indicator}\n`)}
+                  {EXAMPLES[currentIndex].indicators.map(
+                    (indicator) => `• ${indicator}\n`
+                  )}
                 </Text>
               </View>
             )}
@@ -241,6 +269,13 @@ export default function PhishingPreventionScreen() {
         </>
       ) : (
         <View style={styles.completionContainer}>
+          <ConfettiCannon
+            count={50}
+            origin={{ x: -10, y: 0 }}
+            fallSpeed={2500}
+            fadeOut={true}
+            autoStart={true}
+          />
           <Text style={styles.completionTitle}>Congratulations!</Text>
           <Text style={[styles.completionText, { marginBottom: 20 }]}>
             You've completed all phishing scenarios
@@ -252,6 +287,7 @@ export default function PhishingPreventionScreen() {
             style={styles.completeButton}
             onPress={() => {
               markModuleComplete('phishing-prevention');
+              awardBadge('phishingDetective');
               router.back();
             }}
           >

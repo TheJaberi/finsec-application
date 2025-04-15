@@ -3,6 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useEffect, useRef } from 'react';
 import { useLearningProgress } from '@/contexts/LearningProgressContext';
 import { router } from 'expo-router';
+import { useBadges } from '@/contexts/BadgesContext';
 import { AlertTriangle, Check, X, DollarSign, Clock, MapPin, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react-native';
 
 const SCENARIOS = [
@@ -66,6 +67,7 @@ export default function TransactionSafetyScreen() {
   const [score, setScore] = useState(0);
   const slideAnim = useRef(new Animated.Value(0)).current;
   const { updateModuleProgress, markModuleComplete } = useLearningProgress();
+  const { awardBadge } = useBadges();
 
   useEffect(() => {
     updateModuleProgress('transaction-safety', 'scenario-' + currentScenario);
@@ -166,6 +168,7 @@ export default function TransactionSafetyScreen() {
             style={styles.completeButton}
             onPress={() => {
               markModuleComplete('transaction-safety');
+              awardBadge('transactionMaster');
               router.back();
             }}
           >

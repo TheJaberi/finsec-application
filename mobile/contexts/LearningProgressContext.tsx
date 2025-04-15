@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useBadges } from './BadgesContext';
 
 type ModuleProgress = {
   completed: boolean;
@@ -15,6 +16,7 @@ interface LearningProgressContextType {
   progress: LearningProgress;
   markModuleComplete: (moduleId: string) => Promise<void>;
   updateModuleProgress: (moduleId: string, position: string) => Promise<void>;
+  clearModuleProgress: (moduleId: string) => Promise<void>;
   getModuleProgress: (moduleId: string) => ModuleProgress | undefined;
   isModuleCompleted: (moduleId: string) => boolean;
 }
@@ -60,6 +62,18 @@ export function LearningProgressProvider({ children }: { children: React.ReactNo
     await saveProgress(updatedProgress);
   };
 
+  const clearModuleProgress = async (moduleId: string) => {
+    const updatedProgress = {
+      ...progress,
+      [moduleId]: {
+        completed: false,
+        lastPosition: '',
+        timeSpent: 0,
+      },
+    };
+    await saveProgress(updatedProgress);
+  };
+
   const updateModuleProgress = async (moduleId: string, position: string) => {
     const currentModule = progress[moduleId] || { completed: false, timeSpent: 0, lastPosition: '' };
     const updatedProgress = {
@@ -87,6 +101,7 @@ export function LearningProgressProvider({ children }: { children: React.ReactNo
         progress,
         markModuleComplete,
         updateModuleProgress,
+        clearModuleProgress,
         getModuleProgress,
         isModuleCompleted,
       }}

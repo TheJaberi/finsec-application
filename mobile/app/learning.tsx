@@ -1,22 +1,11 @@
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
-import {
-  Shield,
-  Key,
-  AlertTriangle,
-  Smartphone,
-  AlertCircle,
-  ChevronLeft,
-} from 'lucide-react-native';
+import { Shield, Key, AlertTriangle, Smartphone, ChevronLeft } from 'lucide-react-native';
 import { useLearningProgress } from '@/contexts/LearningProgressContext';
+import { useBadges, BADGES } from '@/contexts/BadgesContext';
+import BadgeDisplay from '@/components/learning/BadgeDisplay';
 
 const modules = [
   {
@@ -25,6 +14,7 @@ const modules = [
     description: 'Learn about creating and managing strong passwords',
     icon: Key,
     color: '#007AFF',
+    badgeId: 'passwordMaster',
   },
   {
     id: 'secure-auth',
@@ -32,13 +22,15 @@ const modules = [
     description: 'Understanding multi-factor authentication and biometrics',
     icon: Shield,
     color: '#32C759',
+    badgeId: 'authenticationPro',
   },
   {
     id: 'transaction-safety',
     title: 'Transaction Safety',
     description: 'How to ensure your transactions are secure',
-    icon: AlertCircle,
+    icon: AlertTriangle,
     color: '#FF9500',
+    badgeId: 'transactionMaster',
   },
   {
     id: 'device-security',
@@ -46,6 +38,7 @@ const modules = [
     description: 'Keeping your device and app secure',
     icon: Smartphone,
     color: '#AF52DE',
+    badgeId: 'deviceGuardian',
   },
   {
     id: 'phishing-prevention',
@@ -53,11 +46,52 @@ const modules = [
     description: 'Identifying and avoiding security threats',
     icon: AlertTriangle,
     color: '#FF3B30',
+    badgeId: 'phishingDetective',
   },
 ];
 
 export default function LearningScreen() {
   const { progress, isModuleCompleted } = useLearningProgress();
+  const { awardBadge, hasBadge } = useBadges();
+  const [showBadge, setShowBadge] = useState(false);
+  const [currentBadge, setCurrentBadge] = useState<string | null>(null);
+
+  const handleModulePress = (moduleId: string) => {
+    router.push(`/learning/${moduleId}`);
+  };
+
+  useEffect(() => {
+    checkAndAwardBadges();
+  }, [progress]);
+
+  const checkAndAwardBadges = async () => {
+    // Count completed modules
+    const completedCount = modules.filter(module => isModuleCompleted(module.id)).length;
+
+    // Award badges based on completion
+    if (completedCount > 0 && !hasBadge('securityTrainee')) {
+      await awardBadge('securityTrainee');
+      setCurrentBadge('securityTrainee');
+      setShowBadge(true);
+    } else if (completedCount >= 3 && !hasBadge('securityApprentice')) {
+      await awardBadge('securityApprentice');
+      setCurrentBadge('securityApprentice');
+      setShowBadge(true);
+    } else if (completedCount === modules.length && !hasBadge('securityExpert')) {
+      await awardBadge('securityExpert');
+      setCurrentBadge('securityExpert');
+      setShowBadge(true);
+    }
+
+    // Award individual module badges
+    modules.forEach(async (module) => {
+      if (isModuleCompleted(module.id) && !hasBadge(module.badgeId)) {
+        await awardBadge(module.badgeId);
+        setCurrentBadge(module.badgeId);
+        setShowBadge(true);
+      }
+    });
+  };
 
   const calculateProgress = () => {
     const completedCount = modules.filter(module => isModuleCompleted(module.id)).length;
@@ -66,7 +100,6 @@ export default function LearningScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
@@ -78,7 +111,6 @@ export default function LearningScreen() {
         <Text style={styles.title}>Security Learning</Text>
       </View>
 
-      {/* Progress Bar */}
       <View style={styles.progressContainer}>
         <View style={styles.progressBar}>
           <View
@@ -90,7 +122,6 @@ export default function LearningScreen() {
         </Text>
       </View>
 
-      {/* Modules List */}
       <ScrollView style={styles.modulesList}>
         {modules.map((module) => (
           <TouchableOpacity
@@ -99,7 +130,7 @@ export default function LearningScreen() {
               styles.moduleCard,
               isModuleCompleted(module.id) && styles.moduleCardCompleted
             ]}
-            onPress={() => router.push(`/learning/${module.id}`)}
+            onPress={() => handleModulePress(module.id)}
           >
             <View
               style={[styles.iconContainer, { backgroundColor: module.color }]}
@@ -116,6 +147,17 @@ export default function LearningScreen() {
           </TouchableOpacity>
         ))}
       </ScrollView>
+
+      {currentBadge && (
+        <BadgeDisplay
+          badge={BADGES[currentBadge]}
+          visible={showBadge}
+          onClose={() => {
+            setShowBadge(false);
+            setCurrentBadge(null);
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -128,6 +170,7 @@ const styles = StyleSheet.create({
   header: {
     padding: 20,
     paddingTop: 60,
+    backgroundColor: '#FFFFFF',
   },
   backButton: {
     flexDirection: 'row',
@@ -147,7 +190,6 @@ const styles = StyleSheet.create({
   },
   progressContainer: {
     padding: 20,
-    paddingTop: 0,
   },
   progressBar: {
     height: 8,

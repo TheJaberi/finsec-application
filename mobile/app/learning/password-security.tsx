@@ -3,31 +3,32 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useEffect } from 'react';
 import { useLearningProgress } from '@/contexts/LearningProgressContext';
 import { router } from 'expo-router';
+import { useBadges } from '@/contexts/BadgesContext';
 
 // Password strength estimation in seconds
 const estimateCrackTime = (password: string) => {
   let score = 0;
   const length = password.length;
-  
+
   // Basic character type checks
   const hasLower = /[a-z]/.test(password);
   const hasUpper = /[A-Z]/.test(password);
   const hasNumber = /\d/.test(password);
   const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-  
+
   // Calculate character set size
   let charSetSize = 0;
   if (hasLower) charSetSize += 26;
   if (hasUpper) charSetSize += 26;
   if (hasNumber) charSetSize += 10;
   if (hasSpecial) charSetSize += 32;
-  
+
   // Basic formula: possibilities = charSetSize^length
   const possibilities = Math.pow(charSetSize, length);
-  
+
   // Assuming 10 billion guesses per second (modern computer)
   const secondsToCrack = possibilities / (10 * Math.pow(10, 9));
-  
+
   return {
     regular: formatTime(secondsToCrack),
     supercomputer: formatTime(secondsToCrack / 1000), // 1000x faster
@@ -47,7 +48,7 @@ const formatTime = (seconds: number) => {
 
 const calculateStrength = (password: string) => {
   let score = 0;
-  
+
   if (password.length >= 8) score += 20;
   if (password.length >= 12) score += 20;
   if (/[a-z]/.test(password)) score += 10;
@@ -55,7 +56,7 @@ const calculateStrength = (password: string) => {
   if (/\d/.test(password)) score += 10;
   if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) score += 20;
   if (password.length >= 16) score += 10;
-  
+
   return Math.min(score, 100);
 };
 
@@ -71,6 +72,7 @@ export default function PasswordSecurityScreen() {
   const [password, setPassword] = useState('');
   const [strength, setStrength] = useState(0);
   const { updateModuleProgress, markModuleComplete } = useLearningProgress();
+  const { awardBadge } = useBadges();
   const crackTimes = estimateCrackTime(password);
   const strengthInfo = getStrengthLabel(strength);
 
@@ -83,13 +85,13 @@ export default function PasswordSecurityScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.content}>
         <Text style={styles.title}>Password Security</Text>
-        
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Password Strength Checker</Text>
           <Text style={styles.description}>
             Enter a password to see how strong it is and how long it would take to crack
           </Text>
-          
+
           <TextInput
             style={styles.input}
             value={password}
@@ -110,17 +112,17 @@ export default function PasswordSecurityScreen() {
           {password.length > 0 && (
             <View style={styles.crackTimeContainer}>
               <Text style={styles.crackTimeTitle}>Time to crack:</Text>
-              
+
               <View style={styles.crackTimeRow}>
                 <Text style={styles.crackTimeLabel}>Regular Computer:</Text>
                 <Text style={styles.crackTimeValue}>{crackTimes.regular}</Text>
               </View>
-              
+
               <View style={styles.crackTimeRow}>
                 <Text style={styles.crackTimeLabel}>Supercomputer:</Text>
                 <Text style={styles.crackTimeValue}>{crackTimes.supercomputer}</Text>
               </View>
-              
+
               <View style={styles.crackTimeRow}>
                 <Text style={styles.crackTimeLabel}>Quantum Computer:</Text>
                 <Text style={styles.crackTimeValue}>{crackTimes.quantum}</Text>
@@ -145,6 +147,7 @@ export default function PasswordSecurityScreen() {
           style={styles.completeButton}
           onPress={() => {
             markModuleComplete('password-security');
+            awardBadge('passwordMaster');
             router.back();
           }}
         >
@@ -235,7 +238,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#8E8E93',
     fontFamily: 'Inter_400Regular',
-  },
+    },
   crackTimeValue: {
     fontSize: 14,
     color: '#1A1A1A',

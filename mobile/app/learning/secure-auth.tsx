@@ -3,6 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useEffect, useRef } from 'react';
 import { useLearningProgress } from '@/contexts/LearningProgressContext';
 import { router } from 'expo-router';
+import { useBadges } from '@/contexts/BadgesContext';
 import { Smartphone, Key, MessageSquare, Fingerprint, AlertTriangle, ChevronLeft } from 'lucide-react-native';
 
 const MFA_TYPES = [
@@ -104,6 +105,7 @@ export default function SecureAuthScreen() {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [showDemo, setShowDemo] = useState(false);
   const { updateModuleProgress, markModuleComplete } = useLearningProgress();
+  const { awardBadge } = useBadges();
 
   useEffect(() => {
     updateModuleProgress('secure-auth', 'exploring-mfa');
@@ -189,6 +191,7 @@ export default function SecureAuthScreen() {
           style={styles.completeButton}
           onPress={() => {
             markModuleComplete('secure-auth');
+            awardBadge('authenticationPro');
             router.back();
           }}
         >

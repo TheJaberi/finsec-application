@@ -17,6 +17,7 @@ import {
   CircleHelp as HelpCircle,
   LogOut,
   GraduationCap,
+  Trophy,
 } from 'lucide-react-native';
 import { useUser } from '@/contexts/UserContext';
 import { router } from 'expo-router';
@@ -68,6 +69,10 @@ export default function SettingsScreen() {
     router.push('/help-center');
   };
 
+  const navigateToBadges = () => {
+    router.push('/badges');
+  };
+
   const navigateToLearning = () => {
     router.push('/learning');
   };
@@ -96,6 +101,11 @@ export default function SettingsScreen() {
           icon: GraduationCap,
           label: 'Security Learning',
           onPress: navigateToLearning,
+        },
+        {
+          icon: Trophy,
+          label: 'Your Badges',
+          onPress: navigateToBadges,
         },
       ],
     },

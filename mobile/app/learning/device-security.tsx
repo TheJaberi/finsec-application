@@ -1,19 +1,21 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useEffect } from 'react';
 import { useLearningProgress } from '@/contexts/LearningProgressContext';
 import { router } from 'expo-router';
-import { 
-  Lock, 
-  Smartphone, 
-  Wifi, 
-  Shield, 
+import { useBadges } from '@/contexts/BadgesContext';
+import {
+  Lock,
+  Smartphone,
+  Wifi,
+  Shield,
   RefreshCw,
   Check,
   AlertTriangle,
   Camera,
   Mic,
   MapPin,
+  ChevronLeft,
 } from 'lucide-react-native';
 
 const SECURITY_CHECKS = [
@@ -118,6 +120,7 @@ export default function DeviceSecurityScreen() {
   const [completedChecks, setCompletedChecks] = useState<string[]>([]);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const { updateModuleProgress, markModuleComplete } = useLearningProgress();
+  const { awardBadge } = useBadges();
 
   useEffect(() => {
     updateModuleProgress('device-security', `completed-${completedChecks.length}`);
@@ -146,9 +149,18 @@ export default function DeviceSecurityScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.content}>
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <ChevronLeft size={24} color="#1A1A1A" />
+          <Text style={styles.backText}>Back</Text>
+        </TouchableOpacity>
         <Text style={styles.title}>Device Security</Text>
+      </View>
 
+      <ScrollView style={styles.content}>
         <View style={styles.progressContainer}>
           <View style={styles.progressBar}>
             <View
@@ -174,7 +186,7 @@ export default function DeviceSecurityScreen() {
               <View style={styles.sectionTitle}>
                 <Text style={styles.sectionTitleText}>{section.title}</Text>
                 <Text style={styles.sectionCount}>
-                  {section.items.filter(item => 
+                  {section.items.filter(item =>
                     isItemChecked(section.id, item.title)
                   ).length} / {section.items.length}
                 </Text>
@@ -220,6 +232,7 @@ export default function DeviceSecurityScreen() {
             style={styles.completeButton}
             onPress={() => {
               markModuleComplete('device-security');
+              awardBadge('deviceGuardian');
               router.back();
             }}
           >
@@ -236,9 +249,21 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F2F2F7',
   },
-  content: {
-    flex: 1,
+  header: {
     padding: 20,
+    paddingTop: 60,
+    backgroundColor: '#FFFFFF',
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  backText: {
+    fontSize: 16,
+    color: '#1A1A1A',
+    marginLeft: 4,
+    fontFamily: 'Inter_500Medium',
   },
   title: {
     fontSize: 28,
